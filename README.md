@@ -33,7 +33,7 @@ The following must be considered:
     On startup the Kernel and initial RAM file system must support locating and loading a saved state (resuming) from a storage device.
     This is usually done by modifying the boot loader configuration which provides the default Kernel command line.
 
-4.  Secure Boot
+4.  Secure Boot  
     Resuming means replacing the freshly booted Kernel in memory with the Kernel from the hibernation image.
     This can break the Secure Boot chain if certain lockdown policies are enabled and the hibernation image is not protected against tampering in a way that the freshly booted Kernel can verify.
     One way to deal with this is to simply disable Secure Boot.
