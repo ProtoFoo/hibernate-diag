@@ -1,6 +1,9 @@
 #!/bin/bash
-
+#
+# Hibernate Diagnosis
 # https://github.com/ProtoFoo/hibernate-diag
+# Dependencies: awk, grep, lsblk, free, (uname)
+#
 
 NORMAL=$(echo -en '\001\033[0m\002')
 WHITE=$(echo -en '\001\033[01;37m\002')
@@ -65,12 +68,12 @@ fi
 echo "  [$result] /sys/power/disk:   $disk_state"
 
 resume_device=$(</sys/power/resume)
+resume_offset=$(</sys/power/resume_offset)
 if [ -n "$resume_device" ]; then
 	resume_uuid=$(lsblk -o MAJ:MIN,UUID | grep "$resume_device" | awk '{printf("(UUID %s)", $2)}')
 	[ "$resume_device" != "0:0" ] && result="$PASS" || result="$FAIL"
 	echo "  [$result] /sys/power/resume: $resume_device $resume_uuid"
 
-	resume_offset=$(</sys/power/resume_offset)
 	echo "         /sys/power/resume_offset: $resume_offset"
 	[ "$resume_offset" != "0" ] && echo "         You are resuming from a file. You know what you are doing."
 else
@@ -79,21 +82,21 @@ fi
 
 kernel_cmdline=$(</proc/cmdline)
 is_in_string "resume=" "$kernel_cmdline" && result="$PASS" || result="$FAIL"
-resume=""
-resume_offset=""
+kresume=""
+kresume_offset=""
 # Source: https://stackoverflow.com/a/15027935
 for x in $kernel_cmdline; do
 	case "$x" in
 	resume=*)
-		resume="${x#resume=}"
+		kresume="${x#resume=}"
 		;;
 	resume_offset=*)
-		resume_offset="${x#resume_offset=}"
+		kresume_offset="${x#resume_offset=}"
 		;;
 	esac
 done
-[ -n "$resume_offset" ] && resume_offset="(offset $resume_offset)"
-echo "  [$result] /proc/cmdline:     resume=$resume $resume_offset"
+[ -n "$kresume_offset" ] && kresume_offset="(offset $kresume_offset)"
+echo "  [$result] /proc/cmdline:     resume=$kresume $kresume_offset"
 
 
 #############################################################################
@@ -145,7 +148,7 @@ mem_size=$(free -m | grep 'Mem:' | awk '{print $2}')
 swap_size=$(free -m | grep 'Swap:' | awk '{print $2}')
 echo "  Memory: $mem_size MB, Swap: $swap_size MB"
 
-swap_parts=$(lsblk -l -o NAME,MAJ:MIN,SIZE,TYPE,FSTYPE,MOUNTPOINTS | grep swap | grep -v '^zram')
+swap_parts=$(lsblk -l -o NAME,MAJ:MIN,SIZE,TYPE,FSTYPE,MOUNTPOINT | grep swap | grep -v '^zram')
 if [ -z "$swap_parts" ]; then
 	echo "  No swap partitions found"
 else
@@ -163,7 +166,17 @@ resume_device_info=$(lsblk -o MAJ:MIN,PATH,TYPE,FSTYPE,MOUNTPOINT | grep "$resum
 if [ "$resume_device" = "0:0" ] || [ -z "$resume_device" ] || [ -z "$resume_device_info" ]; then
 	echo "  [$FAIL] No location for the hibernation image found"
 else
-	echo "  [$PASS] The hibernation image will be written to: $resume_device_info"
+	resume_device_path=$(lsblk -o PATH,MAJ:MIN | grep "$resume_device" | awk '{print $1}')
+	if [ -z "$resume_offset" ] || [ "$resume_offset" = "0" ]; then
+		if is_in_string "$resume_device_path" "$active_swaps_names"; then
+			echo "  [$PASS] The hibernation image will be written to: $resume_device_info"
+		else
+			echo "  [$WARN] Suspend to disk might fail. Device not found among swap locations:"
+			echo "          $resume_device_info"
+		fi
+	else
+		echo "  [$PASS] The hibernation image will be written to: $resume_device_info"
+	fi
 fi
 
 

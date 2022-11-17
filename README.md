@@ -12,6 +12,8 @@ It was tested with:
 * Linux Mint
 * Xubuntu
 
+---
+
 ### How to make suspend to disk working
 
 The following must be considered:
@@ -37,3 +39,16 @@ The following must be considered:
     Resuming replaces the freshly booted Kernel in memory with the Kernel from the hibernation image.
     This can break the Secure Boot chain if certain lockdown policies are enabled and the hibernation image is not protected against tampering in a way that the freshly booted Kernel can verify.
     One way to deal with this is to simply disable Secure Boot.
+
+---
+
+### Script execution examples
+
+![Archcraft](/img/archcraft.png)
+![EndeavourOS](/img/endeavouros.png)
+![Linux Mint](/img/linux-mint.png)
+![openSUSE](/img/opensuse.png)
+![Xubuntu](/img/xubuntu.png)
+![Fedora](/img/fedora.png)
+
+Note that the last image shows an example where the Kernel lockdown policy disables suspend to disk because Secure Boot is enabled.
