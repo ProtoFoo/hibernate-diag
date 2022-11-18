@@ -4,9 +4,9 @@ This Bash script will check various system settings to show the most common reas
 
 It should run with normal user permissions on many common Linux distributions.
 
-It was tested with:
+It was tested on:
 
-* Arch
+* Arch Linux
 * Fedora
 * openSUSE
 * Linux Mint
@@ -21,7 +21,7 @@ The following must be considered:
 1.  Hardware Support  
     The Linux Kernel has to support a lot of different devices.
     There is always a chance that a badly written driver or buggy firmware will make it impossible for a system to successfully suspend or to resume.
-    The Linux Kernel provides a very good description of how to test if a system is capable of hibernation:
+    The Linux Kernel provides very good instructions for testing hibernation capabilities of a system:
     https://www.kernel.org/doc/Documentation/power/basic-pm-debugging.txt
 
 2.  Swap Storage  
@@ -44,11 +44,11 @@ The following must be considered:
 
 ### Script execution examples
 
-![Archcraft](/img/archcraft.png)
 ![EndeavourOS](/img/endeavouros.png)
+![Archcraft](/img/archcraft.png)
 ![Linux Mint](/img/linux-mint.png)
-![openSUSE](/img/opensuse.png)
 ![Xubuntu](/img/xubuntu.png)
+![openSUSE](/img/opensuse.png)
 ![Fedora](/img/fedora.png)
 
-Note that the last image shows an example where the Kernel lockdown policy disables suspend to disk because Secure Boot is enabled.
+The last image shows an example where the Kernel lockdown policy disables suspend to disk because Secure Boot is enabled.

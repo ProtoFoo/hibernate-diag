@@ -68,14 +68,19 @@ fi
 echo "  [$result] /sys/power/disk:   $disk_state"
 
 resume_device=$(</sys/power/resume)
-resume_offset=$(</sys/power/resume_offset)
+resume_offset=""
+[ -e /sys/power/resume_offset ] && resume_offset=$(</sys/power/resume_offset)
 if [ -n "$resume_device" ]; then
 	resume_uuid=$(lsblk -o MAJ:MIN,UUID | grep "$resume_device" | awk '{printf("(UUID %s)", $2)}')
 	[ "$resume_device" != "0:0" ] && result="$PASS" || result="$FAIL"
 	echo "  [$result] /sys/power/resume: $resume_device $resume_uuid"
 
-	echo "         /sys/power/resume_offset: $resume_offset"
-	[ "$resume_offset" != "0" ] && echo "         You are resuming from a file. You know what you are doing."
+	if [ -z "$resume_offset" ]; then
+		echo "         /sys/power/resume_offset not found"
+	else
+		echo "         /sys/power/resume_offset: $resume_offset"
+		[ "$resume_offset" != "0" ] && echo "         You are resuming from a file. You know what you are doing."
+	fi
 else
 	echo "  [$FAIL] /sys/power/resume not found or empty. Kernel might not support resume."
 fi
@@ -162,17 +167,17 @@ active_swaps=$(awk 'NR>1 {print $0}' /proc/swaps | grep -v '^/dev/zram' | wc -l)
 active_swaps_names=$(awk 'NR>1 {print $1}' ORS=' ' /proc/swaps)
 echo "  [$result] $active_swaps active persistent swap location(s) $active_swaps_names"
 
-resume_device_info=$(lsblk -o MAJ:MIN,PATH,TYPE,FSTYPE,MOUNTPOINT | grep "$resume_device")
+resume_device_info=$(lsblk -lpo MAJ:MIN,NAME,TYPE,FSTYPE,MOUNTPOINT | grep "$resume_device")
 if [ "$resume_device" = "0:0" ] || [ -z "$resume_device" ] || [ -z "$resume_device_info" ]; then
 	echo "  [$FAIL] No location for the hibernation image found"
 else
-	resume_device_path=$(lsblk -o PATH,MAJ:MIN | grep "$resume_device" | awk '{print $1}')
+	resume_device_path=$(lsblk -lpo NAME,MAJ:MIN | grep "$resume_device" | awk '{print $1}')
 	if [ -z "$resume_offset" ] || [ "$resume_offset" = "0" ]; then
 		if is_in_string "$resume_device_path" "$active_swaps_names"; then
 			echo "  [$PASS] The hibernation image will be written to: $resume_device_info"
 		else
 			echo "  [$WARN] Suspend to disk might fail. Device not found among swap locations:"
-			echo "          $resume_device_info"
+			echo "         $resume_device_info"
 		fi
 	else
 		echo "  [$PASS] The hibernation image will be written to: $resume_device_info"
@@ -202,7 +207,9 @@ fi
 
 # Debian / Ubuntu / Mint, ...
 if is_bin_in_path lsinitramfs; then
-	lsinitramfs -l /boot/initrd.img | grep -q resume
+	initrd_file="/initrd.img"
+	[ -f "/boot/initrd.img" ] && initrd_file="/boot/initrd.img"
+	lsinitramfs -l "$initrd_file" | grep -q '/resume$'
 	check_exit_code "lsinitramfs"
 	initram_check=1
 fi
